@@ -1,2 +1,11 @@
 node_modules
 .serverless
+
+# Jest coverage reports
+coverage/
+
+# Jest cache
+jest-cache/
+
+# Build artifacts
+.build
