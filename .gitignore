@@ -9,3 +9,4 @@ jest-cache/
 
 # Build artifacts
 .build
+.dynamodb
