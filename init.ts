@@ -6,8 +6,45 @@ const dynamoDb = new DynamoDB({
   region: ENV.REGION,
 });
 
+const initTable = async (
+  tableName: string,
+  params: DynamoDB.CreateTableInput
+) => {
+  try {
+    console.log(`Checking if table ${tableName} exists...`);
+
+    // Check if the table exists
+    await dynamoDb.describeTable({ TableName: tableName }).promise();
+    console.log(`Table ${tableName} exists. Deleting...`);
+
+    await dynamoDb.deleteTable({ TableName: tableName }).promise();
+    console.log(`Table ${tableName} deleted successfully.`);
+  } catch (error: any) {
+    if (error.code === "ResourceNotFoundException") {
+      console.log(
+        `Table ${tableName} does not exist. Proceeding with creation.`
+      );
+    } else {
+      console.error(
+        `Error checking table existence for ${tableName}:`,
+        error.message
+      );
+      return;
+    }
+  }
+
+  try {
+    console.log(`Creating table ${tableName}...`);
+    await dynamoDb.createTable(params).promise();
+    console.log(`Table ${tableName} created successfully.`);
+  } catch (error: any) {
+    console.error(`Error creating table ${tableName}:`, error.message);
+  }
+};
+
 const init = async () => {
-  const params: DynamoDB.CreateTableInput = {
+  // Initialize UsersTable
+  await initTable(ENV.USER_TABLE, {
     TableName: ENV.USER_TABLE,
     AttributeDefinitions: [
       {
@@ -22,35 +59,43 @@ const init = async () => {
       },
     ],
     BillingMode: "PAY_PER_REQUEST",
-  };
+  });
 
-  try {
-    console.log(`Checking if table ${ENV.USER_TABLE} exists...`);
+  // Initialize BoardsTable
+  await initTable(ENV.BOARD_TABLE, {
+    TableName: ENV.BOARD_TABLE,
+    AttributeDefinitions: [
+      {
+        AttributeName: "boardId",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "boardId",
+        KeyType: "HASH",
+      },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
 
-    // Check if the table exists
-    await dynamoDb.describeTable({ TableName: ENV.USER_TABLE }).promise();
-    console.log(`Table ${ENV.USER_TABLE} exists. Deleting...`);
-
-    await dynamoDb.deleteTable({ TableName: ENV.USER_TABLE }).promise();
-    console.log(`Table ${ENV.USER_TABLE} deleted successfully.`);
-  } catch (error: any) {
-    if (error.code === "ResourceNotFoundException") {
-      console.log(
-        `Table ${ENV.USER_TABLE} does not exist. Proceeding with creation.`
-      );
-    } else {
-      console.error("Error checking table existence:", error.message);
-      return;
-    }
-  }
-
-  try {
-    console.log(`Creating table ${ENV.USER_TABLE}...`);
-    await dynamoDb.createTable(params).promise();
-    console.log(`Table ${ENV.USER_TABLE} created successfully.`);
-  } catch (error: any) {
-    console.error("Error creating table:", error.message);
-  }
+  // Initialize MessagesTable
+  await initTable(ENV.MESSAGE_TABLE, {
+    TableName: ENV.MESSAGE_TABLE,
+    AttributeDefinitions: [
+      {
+        AttributeName: "messageId",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "messageId",
+        KeyType: "HASH",
+      },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
 };
 
 init();

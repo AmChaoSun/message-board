@@ -32,6 +32,11 @@ custom:
     debug: false
     location: .build
 
+  serverless-offline-sqs:
+    autoCreate: true
+    endpoint: http://localhost:9324
+    region: ap-southeast-2
+
 functions:
   helloWorld:
     handler: handler.helloWorld
@@ -64,6 +69,50 @@ functions:
           arn: !Ref UserRegistrationTopic
           topicName: UserRegistrationTopic
 
+  listAllBoards:
+    handler: handler.listAllBoards
+    events:
+      - http:
+          path: boards
+          method: get
+          request:
+            parameters:
+              querystrings:
+                includeMessages: false
+          cors: true
+
+  createBoard:
+    handler: handler.createBoard
+    events:
+      - http:
+          path: boards
+          method: post
+          cors: true
+
+  postMessage:
+    handler: handler.postMessage
+    events:
+      - http:
+          path: boards/{boardId}/messages
+          method: post
+          cors: true
+
+  saveBoardToDynamoDB:
+    handler: handler.saveBoardToDynamoDB
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - CreateBoardQueue
+              - Arn
+
+  saveMessageToDynamoDB:
+    handler: handler.saveMessageToDynamoDB
+    events:
+      - sns:
+          arn: !Ref PostMessageTopic
+          topicName: PostMessageTopic
+
 resources:
   Resources:
     UserRegistrationTopic:
@@ -82,3 +131,37 @@ resources:
           - AttributeName: email
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
+
+    BoardsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: BoardsTable
+        AttributeDefinitions:
+          - AttributeName: boardId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: boardId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    MessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: MessagesTable
+        AttributeDefinitions:
+          - AttributeName: messageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: messageId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    CreateBoardQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: create-board-queue
+
+    PostMessageTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: PostMessageTopic

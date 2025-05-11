@@ -3,6 +3,13 @@ export {
   saveUserToDynamoDB,
   getUserByEmail,
 } from "./services/users/users.events";
+export {
+  listAllBoards,
+  createBoard,
+  postMessage,
+  saveBoardToDynamoDB,
+  saveMessageToDynamoDB,
+} from "./services/boards/boards.events";
 
 export const helloWorld = async (event: any) => {
   return {
